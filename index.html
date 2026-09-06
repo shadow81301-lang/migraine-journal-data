@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>偏頭痛日誌</title>
+<style>
+  :root{
+    --bg: #F1F0EA;
+    --bg-panel: #E7EAE2;
+    --ink: #33383A;
+    --ink-soft: #6E7572;
+    --ink-faint: #9AA09B;
+    --line: #D2D5CB;
+    --accent: #6E8B7A;
+    --accent-soft: #E1E8E0;
+    --headache: #A5768A;
+    --headache-soft: #F0E3E8;
+    --amber: #C79A5D;
+    --amber-soft: #F1E6D3;
+    --brick: #B0604F;
+    --sleep: #7C93A3;
+    --sleep-soft: #E1E7EA;
+    --radius: 3px;
+    --serif: Georgia, 'Iowan Old Style', 'Noto Serif TC', 'PMingLiU', serif;
+    --sans: -apple-system, 'PingFang TC', 'Microsoft JhengHei', 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; color:var(--ink);
+    font-family:var(--sans); line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-color:var(--bg);
+    background-image:repeating-linear-gradient(
+      to bottom, rgba(51,56,58,0.028) 0, rgba(51,56,58,0.028) 1px,
+      transparent 1px, transparent 34px
+    );
+  }
+  .app{max-width:640px; margin:0 auto; padding:0 0 64px;}
+  header.topbar{
+    padding:34px 20px 18px; text-align:center; position:relative;
+  }
+  header.topbar h1{
+    font-family:var(--serif); font-weight:normal; font-size:27px;
+    margin:0; letter-spacing:0.01em; color:var(--ink);
+  }
+  header.topbar .tagline{
+    font-family:var(--serif); font-style:italic; font-size:13px;
+    color:var(--ink-faint); margin:6px 0 22px;
+  }
+  .date-nav{
+    display:inline-flex; align-items:center; justify-content:center; gap:2px;
+    background:var(--bg-panel); border-radius:20px; padding:4px 6px;
+  }
+  .date-nav button{
+    background:none; border:none; font-family:var(--sans); cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .date-nav .arrow{
+    font-size:18px; width:30px; height:30px; border-radius:50%; line-height:1;
+  }
+  .date-nav .arrow:hover{ background:#fff; color:var(--ink); }
+  .date-nav .today-label{
+    font-size:14px; color:var(--ink); min-width:150px; padding:6px 10px;
+  }
+  .date-nav .today-label:hover{ color:var(--accent); }
+
+  .demo-actions{
+    display:flex; justify-content:center; align-items:center; gap:8px; margin-top:16px;
+  }
+  .demo-actions button{
+    font-family:var(--sans); font-size:11px; color:var(--ink-faint);
+    background:none; border:none; cursor:pointer; padding:2px;
+  }
+  .demo-actions button:hover{ color:var(--accent); text-decoration:underline; }
+  .demo-actions .demo-sep{ font-size:11px; color:var(--line); }
+
+  nav.tabs{
+    display:flex; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:0 20px; background:rgba(255,255,255,0.35);
+  }
+  nav.tabs button{
+    flex:1; background:none; border:none; padding:13px 4px 11px;
+    font-family:var(--sans); font-size:14px; color:var(--ink-faint);
+    cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+    letter-spacing:0.02em;
+  }
+  nav.tabs button:hover{ color:var(--ink-soft); }
+  nav.tabs button.active{ color:var(--ink); border-bottom-color:var(--accent); font-weight:600; }
+
+  main{padding:0 20px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .block{ padding:24px 0; border-bottom:1px solid var(--line); }
+  .block h2{
+    margin:0 0 16px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .section-title{
+    font-family:var(--serif); font-weight:normal; font-size:17px; color:var(--ink);
+  }
+  .section-title::before{
+    content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
+    margin-right:9px; vertical-align:middle; position:relative; top:-1px;
+  }
+  .block-sleep .section-title::before{ background:var(--sleep); }
+  .block-factors .section-title::before{ background:var(--amber); }
+  .block-food .section-title::before{ background:var(--accent); }
+  .block-headache .section-title::before{ background:var(--headache); }
+
+  .block h2 button{
+    font-family:var(--sans); font-size:12px; color:var(--accent);
+    background:none; border:1px solid var(--accent); border-radius:12px;
+    padding:4px 12px; cursor:pointer;
+  }
+  .block h2 button:hover{ background:var(--accent-soft); }
+
+  .row{
+    display:flex; align-items:center; gap:10px; margin-bottom:13px;
+  }
+  .row label{
+    width:96px; flex-shrink:0; font-size:13px; color:var(--ink-soft);
+  }
+  .row input[type=time],
+  .row input[type=number],
+  .row input[type=text],
+  .row select{
+    flex:1; font-family:var(--sans); font-size:14px; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:8px 10px; min-width:0;
+  }
+  .row input[type=time]:focus,
+  .row input[type=number]:focus,
+  .row input[type=text]:focus,
+  .row select:focus{ border-color:var(--accent); }
+  .row input[type=range]{ flex:1; accent-color:var(--accent); }
+  .row input[type=checkbox]{ width:18px; height:18px; accent-color:var(--accent); }
+  .row .val-tag{
+    font-size:13px; color:var(--ink-soft); min-width:34px; text-align:right;
+  }
+  .hint{ font-size:12px; color:var(--ink-faint); margin-top:-4px; }
+
+  .stars{ cursor:pointer; letter-spacing:3px; color:var(--line); font-size:19px; }
+  .stars span.filled{ color:var(--amber); }
+
+  .entry{
+    border:1px solid var(--line); border-top-width:3px; border-radius:var(--radius);
+    padding:14px; margin-bottom:12px; background:#fff;
+  }
+  .entry-food{ border-top-color:var(--accent); }
+  .entry-headache{ border-top-color:var(--headache); }
+  .entry .row:last-child{ margin-bottom:0; }
+  .entry .remove{
+    background:none; border:none; color:var(--ink-faint); font-size:18px;
+    cursor:pointer; line-height:1; padding:0 4px;
+  }
+  .entry .remove:hover{ color:var(--brick); }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; }
+  .chip{
+    font-size:12px; padding:5px 11px; border-radius:12px;
+    border:1px solid var(--line); color:var(--ink-soft); cursor:pointer; background:#fff;
+  }
+  .chip:hover{ border-color:var(--ink-faint); }
+  .chip.active{ background:var(--headache-soft); border-color:var(--headache); color:var(--headache); }
+  .chip.active.food{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+  .chip.prodrome-chip.active{ background:var(--amber-soft); border-color:var(--amber); color:#8A6A3A; }
+
+  .empty-note{ font-size:13px; color:var(--ink-faint); font-style:italic; font-family:var(--serif); }
+
+  /* Timeline */
+  .day-summary{
+    border-bottom:1px solid var(--line); padding:16px 0; cursor:pointer;
+    transition:background-color 0.15s ease;
+  }
+  .day-summary:hover{ background:rgba(255,255,255,0.5); }
+  .day-summary .d-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .day-summary .d-date{ font-family:var(--serif); font-size:15px; }
+  .day-summary .d-flags{ font-size:12px; color:var(--ink-faint); }
+  .day-summary .d-detail{ display:none; margin-top:10px; font-size:13px; color:var(--ink-soft); }
+  .day-summary.open .d-detail{ display:block; }
+  .day-detail-line{ margin-bottom:6px; }
+  .intensity-dot{
+    display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px;
+  }
+
+  /* Insights */
+  .insight-block{ margin-bottom:32px; }
+  .insight-block h3{
+    font-family:var(--serif); font-weight:normal; font-size:15px; margin:0 0 14px;
+    padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+  .bar-row{ margin-bottom:10px; }
+  .bar-row .bar-label{
+    display:flex; justify-content:space-between; font-size:13px; color:var(--ink-soft); margin-bottom:4px;
+  }
+  .bar-track{ height:7px; background:var(--bg-panel); border-radius:4px; overflow:hidden; }
+  .bar-fill{ height:100%; background:var(--headache); border-radius:4px; }
+  .compare-pair{ display:flex; gap:24px; }
+  .compare-item{ flex:1; text-align:center; background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:16px 8px; }
+  .compare-item .big-num{ font-family:var(--serif); font-size:30px; }
+  .compare-item .small-label{ font-size:12px; color:var(--ink-faint); margin-top:4px; }
+
+  button:focus-visible, input:focus-visible, select:focus-visible, .stars:focus-visible, .chip:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+
+  .add-tag-row{ display:flex; gap:8px; margin-top:10px; }
+  .add-tag-row input{
+    flex:1; font-family:var(--sans); font-size:13px; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:6px 9px;
+  }
+  .add-tag-row button{
+    font-family:var(--sans); font-size:12px; color:var(--accent);
+    background:none; border:1px solid var(--accent); border-radius:12px;
+    padding:5px 12px; cursor:pointer; white-space:nowrap;
+  }
+  .add-tag-row button:hover{ background:var(--accent-soft); }
+
+  #mealPresetsChips:empty{ display:none; }
+  #mealPresetsChips{ margin-bottom:12px; }
+  .chip.preset{ background:var(--bg-panel); }
+
+  .save-preset{
+    background:none; border:none; color:var(--ink-faint); font-size:15px;
+    cursor:pointer; padding:0 4px;
+  }
+  .save-preset:hover{ color:var(--accent); }
+
+  .alert-banner{
+    border:1px solid var(--brick); background:var(--headache-soft);
+    border-radius:var(--radius); padding:14px 16px; margin-bottom:24px;
+    font-size:13px; color:var(--ink);
+  }
+  .alert-banner strong{ display:block; margin-bottom:4px; font-family:var(--serif); font-size:15px; color:var(--brick); }
+  .alert-banner.ok{ border-color:var(--line); background:var(--accent-soft); }
+  .alert-banner.ok strong{ color:var(--accent); }
+
+  #syncStatus:empty{ display:none; }
+  .sync-info{
+    margin:0 20px 16px; padding:12px 14px; border-radius:var(--radius);
+    font-size:12px; text-align:center; border:1px solid var(--line);
+  }
+  .sync-info.local{ background:var(--bg-panel); color:var(--ink-soft); }
+  .sync-info.gh{ background:var(--accent-soft); border-color:var(--accent); color:var(--ink); }
+
+  .toast{
+    position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; font-size:13px; padding:12px 18px;
+    border-radius:var(--radius); max-width:88vw; text-align:center;
+    opacity:0; pointer-events:none; transition:opacity 0.2s ease, transform 0.2s ease;
+    z-index:1000;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.error{ background:var(--brick); }
+
+  .build-stamp{
+    text-align:center; font-size:10px; color:var(--ink-faint); padding:16px 20px 0;
+  }
+
+  .settings-form .row label{ width:120px; }
+  .settings-form input[type=password],
+  .settings-form input[type=text]{
+    flex:1; font-family:var(--sans); font-size:14px; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:8px 10px; min-width:0;
+  }
+  .settings-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .settings-actions button{
+    font-family:var(--sans); font-size:12px; cursor:pointer; border-radius:12px; padding:7px 16px;
+  }
+  .settings-actions .btn-primary{ background:var(--accent); border:1px solid var(--accent); color:#fff; }
+  .settings-actions .btn-primary:hover{ opacity:0.9; }
+  .settings-actions .btn-secondary{ background:none; border:1px solid var(--line); color:var(--ink-soft); }
+  .settings-actions .btn-secondary:hover{ border-color:var(--ink-faint); }
+
+  .setup-steps{
+    counter-reset:step; margin:0; padding:0; list-style:none;
+  }
+  .setup-steps li{
+    counter-increment:step; position:relative; padding-left:30px; margin-bottom:14px;
+    font-size:13px; color:var(--ink-soft); line-height:1.6;
+  }
+  .setup-steps li::before{
+    content:counter(step); position:absolute; left:0; top:0;
+    width:20px; height:20px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+    font-size:11px; font-weight:bold; display:flex; align-items:center; justify-content:center;
+  }
+  .setup-steps code{
+    background:var(--bg-panel); padding:1px 6px; border-radius:3px; font-size:12px;
+  }
+
+  .heatmap{
+    display:grid; grid-template-columns:repeat(10, 1fr); gap:4px;
+  }
+  .heat-cell{
+    aspect-ratio:1; border-radius:2px; background:var(--bg-panel);
+  }
+  .heatmap-legend{
+    display:flex; align-items:center; gap:6px; margin-top:8px; font-size:11px; color:var(--ink-faint);
+  }
+  .heatmap-legend .heat-cell{ width:12px; height:12px; flex:none; }
+
+  .export-actions{ display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .export-actions button{
+    font-family:var(--sans); font-size:12px; color:var(--accent);
+    background:none; border:1px solid var(--accent); border-radius:12px;
+    padding:6px 14px; cursor:pointer;
+  }
+  .export-actions button:hover{ background:var(--accent-soft); }
+
+  #printArea{ display:none; }
+  @media print{
+    .app{ display:none; }
+    #printArea{
+      display:block; font-family:var(--serif); color:#000; padding:20px;
+    }
+    #printArea h1{ font-size:20px; margin-bottom:4px; }
+    #printArea h2{ font-size:15px; margin:20px 0 6px; border-bottom:1px solid #999; padding-bottom:4px; }
+    #printArea .p-day{ margin-bottom:14px; font-size:12px; }
+    #printArea .p-date{ font-weight:bold; }
+    #printArea .p-line{ margin:2px 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>偏頭痛日誌</h1>
+    <p class="tagline">記下每一天，找出頭痛背後的線索</p>
+    <div class="date-nav">
+      <button class="arrow" id="prevDay" aria-label="前一天">‹</button>
+      <button class="today-label" id="dateLabel" title="點擊回到今天"></button>
+      <button class="arrow" id="nextDay" aria-label="後一天">›</button>
+    </div>
+    <div class="demo-actions">
+      <button id="loadSample">載入示範資料</button>
+      <span class="demo-sep">・</span>
+      <button id="clearAll">清除全部資料</button>
+    </div>
+  </header>
+
+  <div id="syncStatus"></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="log">記錄</button>
+    <button class="tab" data-tab="timeline">時間軸</button>
+    <button class="tab" data-tab="insights">分析</button>
+    <button class="tab" data-tab="settings">設定</button>
+  </nav>
+
+  <main>
+    <section id="tab-log" class="tab-panel active">
+
+      <div class="block block-sleep">
+        <h2><span class="section-title">睡眠</span></h2>
+        <div class="row"><label>入睡時間</label><input type="time" id="bedtime"></div>
+        <div class="row"><label>起床時間</label><input type="time" id="waketime"></div>
+        <div class="row"><label>睡眠品質</label><div class="stars" id="sleepQuality" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="5" aria-label="睡眠品質"></div></div>
+        <div class="hint" id="sleepHoursHint"></div>
+      </div>
+
+      <div class="block block-factors">
+        <h2><span class="section-title">誘因因子</span></h2>
+        <div class="row"><label>壓力程度</label><input type="range" id="stress" min="1" max="5" value="1"><span class="val-tag" id="stressVal">1</span></div>
+        <div class="row"><label>飲水量</label><input type="number" id="water" placeholder="ml"><span class="hint" style="width:24px;">ml</span></div>
+        <div class="row"><label>咖啡因</label><input type="number" id="caffeine" placeholder="mg"><span class="hint" style="width:24px;">mg</span></div>
+        <div class="row"><label>螢幕使用</label><input type="number" step="0.5" id="screenTime" placeholder="小時"><span class="hint" style="width:24px;">hr</span></div>
+        <div class="row"><label>天氣劇變</label><input type="checkbox" id="weatherChange"></div>
+        <div class="row"><label>月經期間</label><input type="checkbox" id="period"></div>
+      </div>
+
+      <div class="block block-food">
+        <h2><span class="section-title">飲食記錄</span><button id="addMeal">＋ 新增</button></h2>
+        <div class="chips" id="mealPresetsChips"></div>
+        <div id="mealsList"></div>
+        <p class="empty-note" id="mealsEmpty">今天還沒有記錄餐點。</p>
+        <div class="add-tag-row">
+          <input type="text" id="newFoodTag" placeholder="新增自訂食物標籤">
+          <button id="addFoodTagBtn">新增標籤</button>
+        </div>
+      </div>
+
+      <div class="block block-headache">
+        <h2><span class="section-title">頭痛紀錄</span><button id="addHeadache">＋ 新增</button></h2>
+        <div id="headachesList"></div>
+        <p class="empty-note" id="headachesEmpty">今天沒有頭痛發作 —— 這是好事。</p>
+      </div>
+
+    </section>
+
+    <section id="tab-timeline" class="tab-panel">
+      <div id="timelineList"></div>
+      <p class="empty-note" id="timelineEmpty">尚無任何紀錄。</p>
+    </section>
+
+    <section id="tab-insights" class="tab-panel">
+      <div id="medAlert"></div>
+
+      <div class="insight-block">
+        <h3>近30天頭痛強度總覽</h3>
+        <div id="heatmap" class="heatmap"></div>
+        <div class="heatmap-legend" id="heatmapLegend"></div>
+      </div>
+
+      <div class="insight-block">
+        <h3>頭痛日與無頭痛日的平均睡眠</h3>
+        <div class="compare-pair" id="sleepCompare"></div>
+      </div>
+      <div class="insight-block">
+        <h3>頭痛發作前 24–48 小時常見誘因因子</h3>
+        <div id="factorBars"></div>
+        <p class="empty-note" id="factorEmpty"></p>
+      </div>
+      <div class="insight-block">
+        <h3>頭痛發作前 24–48 小時常見食物標記</h3>
+        <div id="foodBars"></div>
+        <p class="empty-note" id="foodEmpty"></p>
+      </div>
+      <p class="hint" style="margin-top:10px;">因子與食物統計已納入頭痛發生當天及前一天的紀錄，紀錄天數越多，統計會越準確。</p>
+
+      <div class="insight-block">
+        <h3>匯出報告</h3>
+        <div class="export-actions">
+          <button id="exportText">匯出文字紀錄</button>
+          <button id="exportPrint">列印／儲存為 PDF</button>
+        </div>
+        <p class="hint">列印功能會整理完整紀錄，方便回診時提供給醫生參考。</p>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="tab-panel">
+      <div class="insight-block">
+        <h3>目前的儲存方式</h3>
+        <div id="settingsSyncStatus"></div>
+      </div>
+
+      <div class="insight-block">
+        <h3>連接 GitHub 同步</h3>
+        <p class="hint" style="margin-bottom:14px;">設定後，資料會存到你自己的 GitHub Repo，任何裝置只要填入一樣的設定就能看到同一份紀錄。這組設定只會存在「這個裝置的瀏覽器」裡，不會上傳到任何地方。</p>
+        <div class="settings-form">
+          <div class="row"><label>GitHub 帳號</label><input type="text" id="ghOwner" placeholder="例如：yourname"></div>
+          <div class="row"><label>Repo 名稱</label><input type="text" id="ghRepo" placeholder="例如：migraine-journal-data"></div>
+          <div class="row"><label>分支</label><input type="text" id="ghBranch" placeholder="main（預設）"></div>
+          <div class="row"><label>Personal Access Token</label><input type="password" id="ghToken" placeholder="ghp_..."></div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn-primary" id="ghSave">儲存並連接</button>
+          <button class="btn-secondary" id="ghTest">測試連線</button>
+          <button class="btn-secondary" id="ghDisconnect">中斷連接，改用本機儲存</button>
+        </div>
+      </div>
+
+      <div class="insight-block">
+        <h3>設定步驟</h3>
+        <ol class="setup-steps">
+          <li>到 GitHub 建立一個新的 Repository（可以設成 Private），例如取名 <code>migraine-journal-data</code>。</li>
+          <li>進入該 Repo 的 <code>Settings → Developer settings → Personal access tokens → Fine-grained tokens</code>，建立一組新的 Token，Repository access 選「Only select repositories」並選這個 repo，Permissions 裡把 <code>Contents</code> 設為 <code>Read and write</code>。</li>
+          <li>複製產生的 Token（只會顯示一次），貼到上面的「Personal Access Token」欄位。</li>
+          <li>填好帳號、Repo 名稱、分支（預設 <code>main</code>），按「儲存並連接」。</li>
+          <li>之後在其他裝置（電腦／手機）打開同一個網頁，填入一樣的設定，就能看到同一份資料。</li>
+        </ol>
+        <p class="hint">Token 相當於你 Repo 的鑰匙，請不要分享給別人，也不要貼在公開的地方。若擔心外洩，之後隨時可以到 GitHub 上把這組 Token 刪除、重新產生一組。</p>
+      </div>
+
+      <div class="insight-block">
+        <h3>把這個網站放上 GitHub Pages</h3>
+        <ol class="setup-steps">
+          <li>把這個檔案改名為 <code>index.html</code>，上傳到你剛建立的 Repo（或另一個公開的 Repo）根目錄。</li>
+          <li>到 Repo 的 <code>Settings → Pages</code>，Source 選擇 <code>Deploy from a branch</code>，Branch 選 <code>main</code> / <code>root</code>，儲存。</li>
+          <li>等一兩分鐘，GitHub 會給你一個網址，例如 <code>https://yourname.github.io/repo名稱/</code>，之後不管在手機還是電腦，打開這個網址就能使用。</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+  <p class="build-stamp">版本建置：2026-09-05 22:00（GitHub 同步版）</p>
+</div>
+<div id="printArea"></div>
+
+<script>
+let FOOD_TAGS = ['咖啡因','酒精','巧克力','起司','加工食品','味精','柑橘類','人工甘味劑','醃漬煙燻','堅果'];
+const SYMPTOM_TAGS = ['畏光','畏聲','噁心','視覺先兆','頸部緊繃'];
+const PRODROME_TAGS = ['疲倦','情緒改變','頸部僵硬','打哈欠','注意力不集中','對光聲敏感度上升','食慾改變'];
+const LOCATIONS = ['','單側','雙側','太陽穴','後腦','前額','眼周'];
+const MED_OVERUSE_WEEKLY = 2;   // 每週用藥天數門檻
+const MED_OVERUSE_MONTHLY = 10; // 每月用藥天數門檻
+let mealPresets = [];
+
+let currentDate = todayStr();
+let currentDay = emptyDay();
+let uidCounter = 1;
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function emptyDay(){
+  return {
+    sleep:{bedtime:'',waketime:'',quality:0},
+    factors:{stress:1,water:'',caffeine:'',screenTime:'',weatherChange:false,period:false},
+    meals:[],
+    headaches:[]
+  };
+}
+function uid(){ return 'id'+(uidCounter++)+'_'+Date.now(); }
+function dayKey(dateStr){ return 'day:'+dateStr; }
+
+// ============ Storage layer ============
+// Two backends: localStorage (default, per-browser) and GitHub repo (optional, cross-device).
+// Both are exposed through the same Store.get/set/delete/list interface so the rest
+// of the app never needs to know which one is active.
+
+const GH_SETTINGS_KEY = 'mj_gh_settings';
+
+function getGhSettings(){
+  try{
+    const raw = localStorage.getItem(GH_SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveGhSettings(s){ localStorage.setItem(GH_SETTINGS_KEY, JSON.stringify(s)); }
+function clearGhSettings(){ localStorage.removeItem(GH_SETTINGS_KEY); }
+function ghConfigured(){
+  const s = getGhSettings();
+  return !!(s && s.token && s.owner && s.repo);
+}
+
+function b64encode(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64decode(str){ return decodeURIComponent(escape(atob(str.replace(/\n/g,'')))); }
+
+function ghPathFor(key){
+  // 'day:2026-09-05' -> 'data/day-2026-09-05.json' ; 'settings:foodTags' -> 'data/settings-foodTags.json'
+  return 'data/' + key.replace(':', '-') + '.json';
+}
+async function ghRequest(path, options){
+  const s = getGhSettings();
+  if(!s) throw new Error('尚未設定 GitHub 同步');
+  const url = `https://api.github.com/repos/${s.owner}/${s.repo}/contents/${path}`;
+  const res = await fetch(url, {
+    method: (options && options.method) || 'GET',
+    headers:{
+      'Authorization': 'Bearer ' + s.token,
+      'Accept': 'application/vnd.github+json'
+    },
+    body: (options && options.body) ? JSON.stringify(options.body) : undefined
+  });
+  return res;
+}
+async function ghGetFile(key){
+  const res = await ghRequest(ghPathFor(key));
+  if(res.status === 404) return null;
+  if(!res.ok) throw new Error('GitHub 讀取失敗（'+res.status+'）');
+  const data = await res.json();
+  return { content: b64decode(data.content), sha: data.sha };
+}
+async function ghPutFile(key, content){
+  let sha = null;
+  try{ const existing = await ghGetFile(key); sha = existing ? existing.sha : null; }catch(e){ /* treat as new file */ }
+  const s = getGhSettings();
+  const body = {
+    message: '更新 ' + key,
+    content: b64encode(content),
+    branch: s.branch || 'main'
+  };
+  if(sha) body.sha = sha;
+  const res = await ghRequest(ghPathFor(key), {method:'PUT', body});
+  if(!res.ok) throw new Error('GitHub 寫入失敗（'+res.status+'）');
+  return await res.json();
+}
+async function ghDeleteFile(key){
+  const existing = await ghGetFile(key);
+  if(!existing) return true;
+  const s = getGhSettings();
+  const res = await ghRequest(ghPathFor(key), {
+    method:'DELETE',
+    body:{ message:'刪除 '+key, sha:existing.sha, branch:s.branch || 'main' }
+  });
+  return res.ok;
+}
+async function ghListDayKeys(){
+  const res = await ghRequest('data');
+  if(res.status === 404) return [];
+  if(!res.ok) throw new Error('GitHub 列表失敗（'+res.status+'）');
+  const items = await res.json();
+  return items
+    .filter(i => i.type === 'file' && i.name.startsWith('day-') && i.name.endsWith('.json'))
+    .map(i => 'day:' + i.name.slice('day-'.length, -'.json'.length));
+}
+
+// ---- localStorage backend ----
+function lsKey(key){ return 'mj:' + key; }
+function localGet(key){ const v = localStorage.getItem(lsKey(key)); return v; }
+function localSet(key, value){ localStorage.setItem(lsKey(key), value); }
+function localDelete(key){ localStorage.removeItem(lsKey(key)); }
+function localListDayKeys(){
+  const out = [];
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k && k.startsWith('mj:day:')) out.push(k.slice(3));
+  }
+  return out;
+}
+
+// ---- unified Store (matches the old window.storage.* shape: get/set/delete/list) ----
+const Store = {
+  async get(key){
+    if(ghConfigured()){
+      const f = await ghGetFile(key);
+      return f ? {value:f.content} : null;
+    }
+    const v = localGet(key);
+    return v !== null ? {value:v} : null;
+  },
+  async set(key, value){
+    if(ghConfigured()){
+      await ghPutFile(key, value);
+      return {key};
+    }
+    localSet(key, value);
+    return {key};
+  },
+  async delete(key){
+    if(ghConfigured()){
+      const ok = await ghDeleteFile(key);
+      return {key, deleted:ok};
+    }
+    localDelete(key);
+    return {key, deleted:true};
+  },
+  async list(prefix){
+    if(ghConfigured()){
+      const keys = await ghListDayKeys();
+      return {keys};
+    }
+    return {keys: localListDayKeys()};
+  }
+};
+
+
+function formatDateLabel(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const weekdays = ['週日','週一','週二','週三','週四','週五','週六'];
+  return `${y}年${m}月${d}日 ${weekdays[dt.getDay()]}`;
+}
+function addDays(dateStr, delta){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate()+delta);
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+
+// ---------- settings (custom food tags + meal presets) ----------
+async function loadSettings(){
+  try{
+    const res = await Store.get('settings:foodTags', false);
+    if(res && res.value){
+      const extra = JSON.parse(res.value);
+      extra.forEach(t=>{ if(!FOOD_TAGS.includes(t)) FOOD_TAGS.push(t); });
+    }
+  }catch(e){ /* none saved yet */ }
+  try{
+    const res = await Store.get('settings:mealPresets', false);
+    if(res && res.value) mealPresets = JSON.parse(res.value);
+  }catch(e){ mealPresets = []; }
+}
+async function saveCustomFoodTag(tag){
+  try{
+    let extra = [];
+    try{
+      const res = await Store.get('settings:foodTags', false);
+      if(res && res.value) extra = JSON.parse(res.value);
+    }catch(e){ /* none yet */ }
+    if(!extra.includes(tag)) extra.push(tag);
+    await Store.set('settings:foodTags', JSON.stringify(extra), false);
+  }catch(e){ console.error('儲存標籤失敗', e); }
+}
+async function saveMealPreset(preset){
+  const exists = mealPresets.find(p=>p.text===preset.text);
+  if(!exists){ mealPresets.push(preset); }
+  try{ await Store.set('settings:mealPresets', JSON.stringify(mealPresets), false); }
+  catch(e){ console.error('儲存常用餐點失敗', e); }
+  renderMealPresets();
+}
+function renderMealPresets(){
+  const el = document.getElementById('mealPresetsChips');
+  el.innerHTML = '';
+  mealPresets.forEach(p=>{
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip preset';
+    chip.textContent = p.text;
+    chip.addEventListener('click', ()=>{
+      const now = new Date();
+      const time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      currentDay.meals.push({id:uid(), time, text:p.text, tags:[...p.tags]});
+      saveCurrentDay(); renderMeals();
+    });
+    el.appendChild(chip);
+  });
+}
+
+// ---------- storage ----------
+async function loadDay(dateStr){
+  try{
+    const res = await Store.get(dayKey(dateStr), false);
+    if(res && res.value) return JSON.parse(res.value);
+  }catch(e){ /* no entry yet */ }
+  return emptyDay();
+}
+async function saveCurrentDay(){
+  try{
+    await Store.set(dayKey(currentDate), JSON.stringify(currentDay), false);
+  }catch(e){ console.error('儲存失敗', e); }
+}
+async function listAllDays(){
+  const out = {};
+  try{
+    const listRes = await Store.list('day:', false);
+    if(!listRes || !listRes.keys) return out;
+    for(const k of listRes.keys){
+      try{
+        const r = await Store.get(k, false);
+        if(r && r.value){
+          out[k.replace('day:','')] = JSON.parse(r.value);
+        }
+      }catch(e){ /* skip */ }
+    }
+  }catch(e){ console.error('讀取失敗', e); }
+  return out;
+}
+
+// ---------- render: date + sleep + factors ----------
+function renderDateLabel(){
+  document.getElementById('dateLabel').textContent = formatDateLabel(currentDate);
+}
+
+function renderSleep(){
+  document.getElementById('bedtime').value = currentDay.sleep.bedtime || '';
+  document.getElementById('waketime').value = currentDay.sleep.waketime || '';
+  renderStars(currentDay.sleep.quality || 0);
+  renderSleepHint();
+}
+function renderStars(value){
+  const el = document.getElementById('sleepQuality');
+  el.innerHTML = '';
+  for(let i=1;i<=5;i++){
+    const s = document.createElement('span');
+    s.textContent = '★';
+    if(i<=value) s.classList.add('filled');
+    el.appendChild(s);
+  }
+  el.dataset.value = value;
+}
+function renderSleepHint(){
+  const b = currentDay.sleep.bedtime, w = currentDay.sleep.waketime;
+  const hintEl = document.getElementById('sleepHoursHint');
+  if(b && w){
+    let [bh,bm] = b.split(':').map(Number);
+    let [wh,wm] = w.split(':').map(Number);
+    let mins = (wh*60+wm) - (bh*60+bm);
+    if(mins < 0) mins += 24*60;
+    const hrs = (mins/60).toFixed(1);
+    hintEl.textContent = `睡眠時數約 ${hrs} 小時`;
+  } else {
+    hintEl.textContent = '';
+  }
+}
+
+function renderFactors(){
+  document.getElementById('stress').value = currentDay.factors.stress || 1;
+  document.getElementById('stressVal').textContent = currentDay.factors.stress || 1;
+  document.getElementById('water').value = currentDay.factors.water || '';
+  document.getElementById('caffeine').value = currentDay.factors.caffeine || '';
+  document.getElementById('screenTime').value = currentDay.factors.screenTime || '';
+  document.getElementById('weatherChange').checked = !!currentDay.factors.weatherChange;
+  document.getElementById('period').checked = !!currentDay.factors.period;
+}
+
+// ---------- meals ----------
+function renderMeals(){
+  const list = document.getElementById('mealsList');
+  list.innerHTML = '';
+  document.getElementById('mealsEmpty').style.display = currentDay.meals.length ? 'none' : 'block';
+  currentDay.meals.forEach(meal => {
+    const el = document.createElement('div');
+    el.className = 'entry entry-food';
+    el.dataset.id = meal.id;
+    const chipsHtml = FOOD_TAGS.map(tag =>
+      `<button type="button" class="chip food${meal.tags.includes(tag)?' active':''}" data-tag="${tag}">${tag}</button>`
+    ).join('');
+    el.innerHTML = `
+      <div class="row">
+        <input type="time" class="meal-time" value="${meal.time||''}">
+        <input type="text" class="meal-text" placeholder="吃了什麼" value="${escapeAttr(meal.text||'')}">
+        <button class="save-preset" aria-label="存為常用" title="存為常用">☆</button>
+        <button class="remove" aria-label="刪除">×</button>
+      </div>
+      <div class="chips">${chipsHtml}</div>
+    `;
+    el.querySelector('.meal-time').addEventListener('change', e=>{ meal.time = e.target.value; saveCurrentDay(); });
+    el.querySelector('.meal-text').addEventListener('input', e=>{ meal.text = e.target.value; });
+    el.querySelector('.meal-text').addEventListener('change', saveCurrentDay);
+    el.querySelector('.save-preset').addEventListener('click', ()=>{
+      if(!meal.text) return;
+      saveMealPreset({text:meal.text, tags:[...meal.tags]});
+    });
+    el.querySelector('.remove').addEventListener('click', ()=>{
+      currentDay.meals = currentDay.meals.filter(m=>m.id!==meal.id);
+      saveCurrentDay(); renderMeals();
+    });
+    el.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        const tag = chip.dataset.tag;
+        const idx = meal.tags.indexOf(tag);
+        if(idx>=0) meal.tags.splice(idx,1); else meal.tags.push(tag);
+        chip.classList.toggle('active');
+        saveCurrentDay();
+      });
+    });
+    list.appendChild(el);
+  });
+}
+function addMeal(){
+  currentDay.meals.push({id:uid(), time:'', text:'', tags:[]});
+  saveCurrentDay(); renderMeals();
+}
+
+// ---------- headaches ----------
+function renderHeadaches(){
+  const list = document.getElementById('headachesList');
+  list.innerHTML = '';
+  document.getElementById('headachesEmpty').style.display = currentDay.headaches.length ? 'none' : 'block';
+  currentDay.headaches.forEach(hd => {
+    const el = document.createElement('div');
+    el.className = 'entry entry-headache';
+    el.dataset.id = hd.id;
+    if(!hd.prodrome) hd.prodrome = [];
+    const locOptions = LOCATIONS.map(l => `<option value="${l}" ${hd.location===l?'selected':''}>${l||'未指定'}</option>`).join('');
+    const prodromeChips = PRODROME_TAGS.map(tag =>
+      `<button type="button" class="chip prodrome-chip${hd.prodrome.includes(tag)?' active':''}" data-tag="${tag}">${tag}</button>`
+    ).join('');
+    const symptomChips = SYMPTOM_TAGS.map(tag =>
+      `<button type="button" class="chip${hd.symptoms.includes(tag)?' active':''}" data-tag="${tag}">${tag}</button>`
+    ).join('');
+    el.innerHTML = `
+      <div class="row">
+        <label>開始</label><input type="time" class="hd-start" value="${hd.start||''}">
+        <label>結束</label><input type="time" class="hd-end" value="${hd.end||''}">
+        <button class="remove" aria-label="刪除">×</button>
+      </div>
+      <div class="row">
+        <label>強度</label><input type="range" class="hd-intensity" min="1" max="10" value="${hd.intensity||1}">
+        <span class="val-tag hd-intensity-val">${hd.intensity||1}</span>
+      </div>
+      <div class="row">
+        <label>位置</label><select class="hd-location">${locOptions}</select>
+      </div>
+      <div class="hint">前驅症狀（發作前警訊）</div>
+      <div class="chips">${prodromeChips}</div>
+      <div class="hint">發作時症狀</div>
+      <div class="chips">${symptomChips}</div>
+      <div class="row">
+        <label>用藥</label><input type="text" class="hd-med" placeholder="例如：止痛藥 1 顆" value="${escapeAttr(hd.medication||'')}">
+      </div>
+    `;
+    el.querySelector('.hd-start').addEventListener('change', e=>{ hd.start=e.target.value; saveCurrentDay(); });
+    el.querySelector('.hd-end').addEventListener('change', e=>{ hd.end=e.target.value; saveCurrentDay(); });
+    const intensityInput = el.querySelector('.hd-intensity');
+    const intensityVal = el.querySelector('.hd-intensity-val');
+    intensityInput.addEventListener('input', e=>{ intensityVal.textContent = e.target.value; });
+    intensityInput.addEventListener('change', e=>{ hd.intensity = Number(e.target.value); saveCurrentDay(); });
+    el.querySelector('.hd-location').addEventListener('change', e=>{ hd.location=e.target.value; saveCurrentDay(); });
+    el.querySelector('.hd-med').addEventListener('input', e=>{ hd.medication=e.target.value; });
+    el.querySelector('.hd-med').addEventListener('change', saveCurrentDay);
+    el.querySelector('.remove').addEventListener('click', ()=>{
+      currentDay.headaches = currentDay.headaches.filter(h=>h.id!==hd.id);
+      saveCurrentDay(); renderHeadaches();
+    });
+    el.querySelectorAll('.chip.prodrome-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        const tag = chip.dataset.tag;
+        const idx = hd.prodrome.indexOf(tag);
+        if(idx>=0) hd.prodrome.splice(idx,1); else hd.prodrome.push(tag);
+        chip.classList.toggle('active');
+        saveCurrentDay();
+      });
+    });
+    el.querySelectorAll('.chip:not(.prodrome-chip)').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        const tag = chip.dataset.tag;
+        const idx = hd.symptoms.indexOf(tag);
+        if(idx>=0) hd.symptoms.splice(idx,1); else hd.symptoms.push(tag);
+        chip.classList.toggle('active');
+        saveCurrentDay();
+      });
+    });
+    list.appendChild(el);
+  });
+}
+function addHeadache(){
+  currentDay.headaches.push({id:uid(), start:'', end:'', intensity:5, location:'', prodrome:[], symptoms:[], medication:''});
+  saveCurrentDay(); renderHeadaches();
+}
+
+function escapeAttr(s){
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+// ---------- switching day ----------
+async function goToDate(dateStr){
+  currentDate = dateStr;
+  renderDateLabel();
+  currentDay = await loadDay(currentDate);
+  renderSleep();
+  renderFactors();
+  renderMeals();
+  renderHeadaches();
+}
+
+// ---------- events: sleep/factors ----------
+document.getElementById('bedtime').addEventListener('change', e=>{ currentDay.sleep.bedtime = e.target.value; renderSleepHint(); saveCurrentDay(); });
+document.getElementById('waketime').addEventListener('change', e=>{ currentDay.sleep.waketime = e.target.value; renderSleepHint(); saveCurrentDay(); });
+document.getElementById('sleepQuality').addEventListener('click', e=>{
+  const rect = e.currentTarget.getBoundingClientRect();
+  const ratio = (e.clientX - rect.left) / rect.width;
+  const value = Math.max(1, Math.min(5, Math.ceil(ratio*5)));
+  currentDay.sleep.quality = value;
+  renderStars(value);
+  saveCurrentDay();
+});
+document.getElementById('sleepQuality').addEventListener('keydown', e=>{
+  let v = currentDay.sleep.quality||0;
+  if(e.key==='ArrowRight'){ v=Math.min(5,v+1); }
+  else if(e.key==='ArrowLeft'){ v=Math.max(0,v-1); }
+  else return;
+  currentDay.sleep.quality = v; renderStars(v); saveCurrentDay();
+});
+
+document.getElementById('stress').addEventListener('input', e=>{ document.getElementById('stressVal').textContent = e.target.value; });
+document.getElementById('stress').addEventListener('change', e=>{ currentDay.factors.stress = Number(e.target.value); saveCurrentDay(); });
+document.getElementById('water').addEventListener('change', e=>{ currentDay.factors.water = e.target.value; saveCurrentDay(); });
+document.getElementById('caffeine').addEventListener('change', e=>{ currentDay.factors.caffeine = e.target.value; saveCurrentDay(); });
+document.getElementById('screenTime').addEventListener('change', e=>{ currentDay.factors.screenTime = e.target.value; saveCurrentDay(); });
+document.getElementById('weatherChange').addEventListener('change', e=>{ currentDay.factors.weatherChange = e.target.checked; saveCurrentDay(); });
+document.getElementById('period').addEventListener('change', e=>{ currentDay.factors.period = e.target.checked; saveCurrentDay(); });
+
+document.getElementById('addMeal').addEventListener('click', addMeal);
+document.getElementById('addHeadache').addEventListener('click', addHeadache);
+document.getElementById('addFoodTagBtn').addEventListener('click', async ()=>{
+  const input = document.getElementById('newFoodTag');
+  const tag = input.value.trim();
+  if(!tag) return;
+  if(!FOOD_TAGS.includes(tag)) FOOD_TAGS.push(tag);
+  await saveCustomFoodTag(tag);
+  input.value = '';
+  renderMeals();
+});
+
+document.getElementById('prevDay').addEventListener('click', ()=>goToDate(addDays(currentDate,-1)));
+document.getElementById('nextDay').addEventListener('click', ()=>goToDate(addDays(currentDate,1)));
+document.getElementById('dateLabel').addEventListener('click', ()=>goToDate(todayStr()));
+
+// ---------- tabs ----------
+document.querySelectorAll('nav.tabs .tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs .tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='timeline') renderTimeline();
+    if(btn.dataset.tab==='insights') renderInsights();
+    if(btn.dataset.tab==='settings') renderSyncStatus();
+  });
+});
+
+// ---------- timeline ----------
+async function renderTimeline(){
+  const container = document.getElementById('timelineList');
+  container.innerHTML = '<p class="empty-note">載入中…</p>';
+  const all = await listAllDays();
+  const dates = Object.keys(all).sort((a,b)=> b.localeCompare(a));
+  container.innerHTML = '';
+  document.getElementById('timelineEmpty').style.display = dates.length ? 'none' : 'block';
+  dates.forEach(dateStr => {
+    const day = all[dateStr];
+    const el = document.createElement('div');
+    el.className = 'day-summary';
+    const hdCount = day.headaches ? day.headaches.length : 0;
+    const maxIntensity = hdCount ? Math.max(...day.headaches.map(h=>h.intensity||0)) : 0;
+    const flags = [];
+    if(hdCount) flags.push(`頭痛 ${hdCount} 次`);
+    if(day.meals && day.meals.length) flags.push(`飲食 ${day.meals.length} 筆`);
+    if(day.sleep && day.sleep.quality) flags.push(`睡眠 ${day.sleep.quality}★`);
+
+    let detailHtml = '';
+    if(day.sleep && (day.sleep.bedtime || day.sleep.waketime)){
+      detailHtml += `<div class="day-detail-line">睡眠：${day.sleep.bedtime||'—'} - ${day.sleep.waketime||'—'}，品質 ${day.sleep.quality||0}★</div>`;
+    }
+    if(day.factors){
+      const f = day.factors;
+      const fParts = [];
+      if(f.stress) fParts.push(`壓力 ${f.stress}/5`);
+      if(f.water) fParts.push(`飲水 ${f.water}ml`);
+      if(f.caffeine) fParts.push(`咖啡因 ${f.caffeine}mg`);
+      if(f.screenTime) fParts.push(`螢幕 ${f.screenTime}hr`);
+      if(f.weatherChange) fParts.push('天氣劇變');
+      if(f.period) fParts.push('月經期間');
+      if(fParts.length) detailHtml += `<div class="day-detail-line">因子：${fParts.join('、')}</div>`;
+    }
+    if(day.meals && day.meals.length){
+      detailHtml += `<div class="day-detail-line">飲食：${day.meals.map(m=>`${m.time||''} ${m.text||''}${m.tags.length?'（'+m.tags.join('、')+'）':''}`).join('；')}</div>`;
+    }
+    if(day.headaches && day.headaches.length){
+      detailHtml += day.headaches.map(h=>{
+        const color = h.intensity>=7 ? 'var(--brick)' : (h.intensity>=4 ? 'var(--amber)' : 'var(--accent)');
+        return `<div class="day-detail-line"><span class="intensity-dot" style="background:${color}"></span>${h.start||'—'}–${h.end||'—'}　強度 ${h.intensity}　${h.location||''}${h.symptoms.length?'　'+h.symptoms.join('、'):''}${h.medication?'　用藥：'+h.medication:''}</div>`;
+      }).join('');
+    }
+    if(!detailHtml) detailHtml = '<div class="day-detail-line">（無詳細內容）</div>';
+
+    el.innerHTML = `
+      <div class="d-head">
+        <span class="d-date">${formatDateLabel(dateStr)}</span>
+        <span class="d-flags">${flags.join('　') || '—'}</span>
+      </div>
+      <div class="d-detail">${detailHtml}</div>
+    `;
+    el.addEventListener('click', ()=> el.classList.toggle('open'));
+    container.appendChild(el);
+  });
+}
+
+// ---------- insights ----------
+async function renderInsights(){
+  const all = await listAllDays();
+  const dates = Object.keys(all);
+
+  const headacheDays = [];      // day objects (for sleep comparison)
+  const headacheDayDates = [];  // {date, day} (for 24-48h window analysis)
+  const noHeadacheDays = [];
+  dates.forEach(d=>{
+    const day = all[d];
+    if(day.headaches && day.headaches.length){
+      headacheDays.push(day);
+      headacheDayDates.push({date:d, day});
+    }
+    else if(day.sleep && (day.sleep.bedtime && day.sleep.waketime)) noHeadacheDays.push(day);
+  });
+
+  renderMedicationAlert(all);
+  renderHeatmap(all);
+
+  function avgSleepHours(days){
+    const hrsArr = days.map(d=>{
+      if(!d.sleep || !d.sleep.bedtime || !d.sleep.waketime) return null;
+      let [bh,bm] = d.sleep.bedtime.split(':').map(Number);
+      let [wh,wm] = d.sleep.waketime.split(':').map(Number);
+      let mins = (wh*60+wm)-(bh*60+bm);
+      if(mins<0) mins += 24*60;
+      return mins/60;
+    }).filter(v=>v!==null);
+    if(!hrsArr.length) return null;
+    return (hrsArr.reduce((a,b)=>a+b,0)/hrsArr.length).toFixed(1);
+  }
+
+  const hSleep = avgSleepHours(headacheDays);
+  const nSleep = avgSleepHours(noHeadacheDays);
+  const sleepCompareEl = document.getElementById('sleepCompare');
+  sleepCompareEl.innerHTML = `
+    <div class="compare-item">
+      <div class="big-num" style="color:var(--headache)">${hSleep!==null?hSleep:'—'}</div>
+      <div class="small-label">頭痛日平均睡眠時數</div>
+    </div>
+    <div class="compare-item">
+      <div class="big-num" style="color:var(--accent)">${nSleep!==null?nSleep:'—'}</div>
+      <div class="small-label">無頭痛日平均睡眠時數</div>
+    </div>
+  `;
+
+  // factor frequency in the 24-48h window before each headache day (headache day + the day before it)
+  const factorCounts = {'壓力偏高(4-5)':0,'飲水不足(<1000ml)':0,'咖啡因攝取':0,'螢幕時間長(>6hr)':0,'天氣劇變':0,'月經期間':0};
+  const foodCounts = {};
+  FOOD_TAGS.forEach(t=>foodCounts[t]=0);
+
+  headacheDayDates.forEach(({date, day})=>{
+    const prevDate = addDays(date, -1);
+    const prevDay = all[prevDate];
+    const fToday = day.factors || {};
+    const fPrev = prevDay ? (prevDay.factors || {}) : {};
+
+    if(Number(fToday.stress) >= 4 || Number(fPrev.stress) >= 4) factorCounts['壓力偏高(4-5)']++;
+    if((fToday.water && Number(fToday.water) < 1000) || (fPrev.water && Number(fPrev.water) < 1000)) factorCounts['飲水不足(<1000ml)']++;
+    if((fToday.caffeine && Number(fToday.caffeine) > 0) || (fPrev.caffeine && Number(fPrev.caffeine) > 0)) factorCounts['咖啡因攝取']++;
+    if((fToday.screenTime && Number(fToday.screenTime) > 6) || (fPrev.screenTime && Number(fPrev.screenTime) > 6)) factorCounts['螢幕時間長(>6hr)']++;
+    if(fToday.weatherChange || fPrev.weatherChange) factorCounts['天氣劇變']++;
+    if(fToday.period || fPrev.period) factorCounts['月經期間']++;
+
+    const seenTags = new Set();
+    [...(day.meals||[]), ...((prevDay&&prevDay.meals)||[])].forEach(m=>{
+      (m.tags||[]).forEach(tag=> seenTags.add(tag));
+    });
+    seenTags.forEach(tag=>{ if(foodCounts[tag]!==undefined) foodCounts[tag]++; });
+  });
+
+  renderBars('factorBars','factorEmpty', factorCounts, headacheDayDates.length);
+  renderBars('foodBars','foodEmpty', foodCounts, headacheDayDates.length);
+}
+
+// ---------- medication overuse alert ----------
+function renderMedicationAlert(all){
+  const el = document.getElementById('medAlert');
+  const today = todayStr();
+  let last7 = 0, last30 = 0;
+  Object.keys(all).forEach(dateStr=>{
+    const day = all[dateStr];
+    const usedMed = (day.headaches||[]).some(h=>h.medication && h.medication.trim());
+    if(!usedMed) return;
+    const diffDays = Math.round((new Date(today) - new Date(dateStr)) / 86400000);
+    if(diffDays >= 0 && diffDays < 7) last7++;
+    if(diffDays >= 0 && diffDays < 30) last30++;
+  });
+
+  if(last7 >= MED_OVERUSE_WEEKLY || last30 >= MED_OVERUSE_MONTHLY){
+    el.innerHTML = `
+      <div class="alert-banner">
+        <strong>用藥頻率提醒</strong>
+        過去 7 天內有 ${last7} 天使用止痛藥／處方藥，過去 30 天內有 ${last30} 天使用。
+        頻繁使用急性止痛藥（例如每週 ${MED_OVERUSE_WEEKLY} 天以上，或每月 ${MED_OVERUSE_MONTHLY} 天以上）有可能造成「藥物過度使用型頭痛」，建議與醫生討論用藥頻率與預防性治療選項。
+      </div>`;
+  } else if(last30 > 0){
+    el.innerHTML = `
+      <div class="alert-banner ok">
+        <strong>用藥頻率</strong>
+        過去 7 天內使用 ${last7} 天，過去 30 天內使用 ${last30} 天，目前在一般建議範圍內。
+      </div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// ---------- heatmap ----------
+function renderHeatmap(all){
+  const container = document.getElementById('heatmap');
+  const legend = document.getElementById('heatmapLegend');
+  container.innerHTML = '';
+  const today = todayStr();
+  const dayList = [];
+  for(let i=29;i>=0;i--) dayList.push(addDays(today, -i));
+
+  dayList.forEach(dateStr=>{
+    const day = all[dateStr];
+    const cell = document.createElement('div');
+    cell.className = 'heat-cell';
+    let title = formatDateLabel(dateStr);
+    if(day && day.headaches && day.headaches.length){
+      const maxI = Math.max(...day.headaches.map(h=>h.intensity||0));
+      cell.style.background = maxI>=7 ? 'var(--brick)' : (maxI>=4 ? 'var(--amber)' : 'var(--accent)');
+      title += `　頭痛強度 ${maxI}`;
+    } else if(day){
+      cell.style.background = 'var(--accent-soft)';
+      title += '　無頭痛';
+    } else {
+      title += '　無紀錄';
+    }
+    cell.title = title;
+    container.appendChild(cell);
+  });
+
+  legend.innerHTML = `
+    <span>輕微</span><div class="heat-cell" style="background:var(--accent)"></div>
+    <div class="heat-cell" style="background:var(--amber)"></div>
+    <div class="heat-cell" style="background:var(--brick)"></div><span>嚴重</span>
+    <span style="margin-left:10px;">・</span><div class="heat-cell" style="background:var(--accent-soft)"></div><span>無頭痛</span>
+    <div class="heat-cell" style="background:var(--bg-panel)"></div><span>無紀錄</span>
+  `;
+}
+
+// ---------- export ----------
+function buildReportLines(all){
+  const dates = Object.keys(all).sort();
+  const lines = [];
+  lines.push('偏頭痛日誌報告');
+  lines.push('產生日期：'+formatDateLabel(todayStr()));
+  lines.push('');
+  dates.forEach(dateStr=>{
+    const day = all[dateStr];
+    lines.push('== '+formatDateLabel(dateStr)+' ==');
+    if(day.sleep && (day.sleep.bedtime||day.sleep.waketime)){
+      lines.push(`睡眠：${day.sleep.bedtime||'—'} - ${day.sleep.waketime||'—'}，品質 ${day.sleep.quality||0}/5`);
+    }
+    const f = day.factors||{};
+    const fParts=[];
+    if(f.stress) fParts.push(`壓力${f.stress}/5`);
+    if(f.water) fParts.push(`飲水${f.water}ml`);
+    if(f.caffeine) fParts.push(`咖啡因${f.caffeine}mg`);
+    if(f.screenTime) fParts.push(`螢幕${f.screenTime}hr`);
+    if(f.weatherChange) fParts.push('天氣劇變');
+    if(f.period) fParts.push('月經期間');
+    if(fParts.length) lines.push('因子：'+fParts.join('、'));
+    (day.meals||[]).forEach(m=>{
+      lines.push(`飲食 ${m.time||''}：${m.text||''}${m.tags&&m.tags.length?'（'+m.tags.join('、')+'）':''}`);
+    });
+    (day.headaches||[]).forEach(h=>{
+      lines.push(`頭痛 ${h.start||'—'}–${h.end||'—'}　強度${h.intensity}　${h.location||''}${h.prodrome&&h.prodrome.length?'　前驅：'+h.prodrome.join('、'):''}${h.symptoms&&h.symptoms.length?'　症狀：'+h.symptoms.join('、'):''}${h.medication?'　用藥：'+h.medication:''}`);
+    });
+    lines.push('');
+  });
+  return lines;
+}
+
+async function exportTextReport(){
+  const all = await listAllDays();
+  const lines = buildReportLines(all);
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '偏頭痛日誌_'+todayStr()+'.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function exportPrintReport(){
+  const all = await listAllDays();
+  const dates = Object.keys(all).sort();
+  const printArea = document.getElementById('printArea');
+  let html = `<h1>偏頭痛日誌報告</h1><p>產生日期：${formatDateLabel(todayStr())}</p>`;
+  dates.forEach(dateStr=>{
+    const day = all[dateStr];
+    html += `<div class="p-day"><div class="p-date">${formatDateLabel(dateStr)}</div>`;
+    if(day.sleep && (day.sleep.bedtime||day.sleep.waketime)){
+      html += `<div class="p-line">睡眠：${day.sleep.bedtime||'—'} - ${day.sleep.waketime||'—'}，品質 ${day.sleep.quality||0}/5</div>`;
+    }
+    const f = day.factors||{};
+    const fParts=[];
+    if(f.stress) fParts.push(`壓力${f.stress}/5`);
+    if(f.water) fParts.push(`飲水${f.water}ml`);
+    if(f.caffeine) fParts.push(`咖啡因${f.caffeine}mg`);
+    if(f.screenTime) fParts.push(`螢幕${f.screenTime}hr`);
+    if(f.weatherChange) fParts.push('天氣劇變');
+    if(f.period) fParts.push('月經期間');
+    if(fParts.length) html += `<div class="p-line">因子：${fParts.join('、')}</div>`;
+    (day.meals||[]).forEach(m=>{
+      html += `<div class="p-line">飲食 ${m.time||''}：${m.text||''}${m.tags&&m.tags.length?'（'+m.tags.join('、')+'）':''}</div>`;
+    });
+    (day.headaches||[]).forEach(h=>{
+      html += `<div class="p-line">頭痛 ${h.start||'—'}–${h.end||'—'}　強度${h.intensity}　${h.location||''}${h.prodrome&&h.prodrome.length?'　前驅：'+h.prodrome.join('、'):''}${h.symptoms&&h.symptoms.length?'　症狀：'+h.symptoms.join('、'):''}${h.medication?'　用藥：'+h.medication:''}</div>`;
+    });
+    html += '</div>';
+  });
+  printArea.innerHTML = html;
+  window.print();
+}
+
+document.getElementById('exportText').addEventListener('click', exportTextReport);
+document.getElementById('exportPrint').addEventListener('click', exportPrintReport);
+
+function renderBars(containerId, emptyId, counts, totalDays){
+  const container = document.getElementById(containerId);
+  const emptyEl = document.getElementById(emptyId);
+  container.innerHTML = '';
+  if(!totalDays){
+    emptyEl.textContent = '目前還沒有頭痛紀錄可供分析。';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  const entries = Object.entries(counts).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){
+    emptyEl.textContent = '尚未觀察到明顯的重複因子。';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  const maxCount = Math.max(...entries.map(([,c])=>c));
+  entries.forEach(([label,count])=>{
+    const pct = Math.round((count/maxCount)*100);
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-label"><span>${label}</span><span>${count}/${totalDays} 天</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ---------- sample data ----------
+function buildSampleData(){
+  const base = todayStr();
+  const d = (offset)=> addDays(base, offset);
+  const days = {};
+
+  days[d(-9)] = {
+    sleep:{bedtime:'23:30', waketime:'07:00', quality:4},
+    factors:{stress:2, water:1800, caffeine:80, screenTime:4, weatherChange:false, period:false},
+    meals:[
+      {id:uid(), time:'08:00', text:'燕麥粥、香蕉', tags:[]},
+      {id:uid(), time:'12:30', text:'雞胸肉沙拉', tags:[]},
+      {id:uid(), time:'19:00', text:'烤鮭魚、糙米飯', tags:[]}
+    ],
+    headaches:[]
+  };
+  days[d(-8)] = {
+    sleep:{bedtime:'01:00', waketime:'06:30', quality:2},
+    factors:{stress:4, water:900, caffeine:220, screenTime:8, weatherChange:false, period:false},
+    meals:[
+      {id:uid(), time:'09:00', text:'咖啡、可頌', tags:['咖啡因']},
+      {id:uid(), time:'13:00', text:'起司三明治', tags:['起司','加工食品']},
+      {id:uid(), time:'20:30', text:'巧克力蛋糕', tags:['巧克力']}
+    ],
+    headaches:[
+      {id:uid(), start:'21:15', end:'23:40', intensity:7, location:'太陽穴', prodrome:['疲倦','打哈欠'], symptoms:['畏光','噁心'], medication:'止痛藥 1顆'}
+    ]
+  };
+  days[d(-7)] = {
+    sleep:{bedtime:'23:00', waketime:'07:30', quality:5},
+    factors:{stress:1, water:2000, caffeine:50, screenTime:3, weatherChange:false, period:false},
+    meals:[
+      {id:uid(), time:'08:00', text:'全麥吐司、蛋', tags:[]},
+      {id:uid(), time:'12:00', text:'蔬菜湯麵', tags:[]}
+    ],
+    headaches:[]
+  };
+  days[d(-6)] = {
+    sleep:{bedtime:'00:30', waketime:'06:00', quality:2},
+    factors:{stress:5, water:1000, caffeine:180, screenTime:9, weatherChange:true, period:false},
+    meals:[
+      {id:uid(), time:'09:30', text:'濃縮咖啡兩杯', tags:['咖啡因']},
+      {id:uid(), time:'14:00', text:'泡麵', tags:['加工食品','味精']},
+      {id:uid(), time:'21:00', text:'紅酒一杯', tags:['酒精']}
+    ],
+    headaches:[
+      {id:uid(), start:'22:00', end:'', intensity:8, location:'單側', prodrome:['情緒改變','對光聲敏感度上升'], symptoms:['畏光','畏聲','視覺先兆'], medication:'處方止痛藥'}
+    ]
+  };
+  days[d(-5)] = {
+    sleep:{bedtime:'22:45', waketime:'07:15', quality:4},
+    factors:{stress:2, water:1700, caffeine:60, screenTime:5, weatherChange:false, period:false},
+    meals:[
+      {id:uid(), time:'08:00', text:'優格、堅果', tags:['堅果']},
+      {id:uid(), time:'13:00', text:'烤雞便當', tags:[]}
+    ],
+    headaches:[]
+  };
+  days[d(-4)] = {
+    sleep:{bedtime:'23:15', waketime:'06:45', quality:3},
+    factors:{stress:3, water:1500, caffeine:100, screenTime:6, weatherChange:false, period:true},
+    meals:[
+      {id:uid(), time:'08:30', text:'吐司、奶茶', tags:['咖啡因']},
+      {id:uid(), time:'12:30', text:'牛肉麵', tags:[]},
+      {id:uid(), time:'19:30', text:'起司披薩', tags:['起司','加工食品']}
+    ],
+    headaches:[
+      {id:uid(), start:'20:10', end:'22:00', intensity:6, location:'前額', symptoms:['噁心','頸部緊繃'], medication:'止痛藥 1顆'}
+    ]
+  };
+  days[d(-3)] = {
+    sleep:{bedtime:'23:00', waketime:'07:00', quality:4},
+    factors:{stress:2, water:1900, caffeine:40, screenTime:4, weatherChange:false, period:true},
+    meals:[
+      {id:uid(), time:'08:00', text:'燕麥、藍莓', tags:[]},
+      {id:uid(), time:'13:00', text:'味噌鯖魚定食', tags:[]}
+    ],
+    headaches:[]
+  };
+  days[d(-2)] = {
+    sleep:{bedtime:'01:30', waketime:'07:00', quality:1},
+    factors:{stress:5, water:800, caffeine:200, screenTime:10, weatherChange:true, period:false},
+    meals:[
+      {id:uid(), time:'10:00', text:'美式咖啡', tags:['咖啡因']},
+      {id:uid(), time:'14:30', text:'加工火腿三明治', tags:['加工食品']},
+      {id:uid(), time:'21:00', text:'巧克力棒', tags:['巧克力']}
+    ],
+    headaches:[
+      {id:uid(), start:'23:00', end:'', intensity:9, location:'雙側', symptoms:['畏光','畏聲','噁心','視覺先兆'], medication:'處方止痛藥'}
+    ]
+  };
+  days[d(-1)] = {
+    sleep:{bedtime:'23:20', waketime:'07:00', quality:4},
+    factors:{stress:2, water:1800, caffeine:70, screenTime:5, weatherChange:false, period:false},
+    meals:[
+      {id:uid(), time:'08:00', text:'水煮蛋、地瓜', tags:[]},
+      {id:uid(), time:'12:30', text:'雞肉沙拉', tags:[]}
+    ],
+    headaches:[]
+  };
+  days[d(0)] = {
+    sleep:{bedtime:'00:15', waketime:'07:00', quality:2},
+    factors:{stress:4, water:1100, caffeine:150, screenTime:7, weatherChange:false, period:false},
+    meals:[
+      {id:uid(), time:'09:00', text:'拿鐵、可頌', tags:['咖啡因']},
+      {id:uid(), time:'13:00', text:'起司漢堡', tags:['起司','加工食品']}
+    ],
+    headaches:[
+      {id:uid(), start:'15:30', end:'17:00', intensity:5, location:'太陽穴', symptoms:['畏光'], medication:''}
+    ]
+  };
+  return days;
+}
+
+async function loadSampleData(){
+  const btn = document.getElementById('loadSample');
+  btn.disabled = true;
+  btn.textContent = '載入中…';
+  let failCount = 0;
+  const days = buildSampleData();
+  for(const [dateStr, data] of Object.entries(days)){
+    try{ await Store.set(dayKey(dateStr), JSON.stringify(data), false); }
+    catch(e){ failCount++; console.error('寫入示範資料失敗', dateStr, e); }
+  }
+  btn.disabled = false;
+  btn.textContent = '載入示範資料';
+  if(failCount > 0){
+    showToast(`示範資料寫入失敗（${failCount} 筆），可能是同步儲存目前無法使用，請確認是透過 Claude 開啟此頁面。`, true);
+    return;
+  }
+  await goToDate(todayStr());
+  document.querySelector('.tab[data-tab="timeline"]').click();
+}
+
+async function clearAllData(){
+  const btn = document.getElementById('clearAll');
+  btn.disabled = true;
+  btn.textContent = '清除中…';
+  let failCount = 0;
+  let totalCount = 0;
+  try{
+    const listRes = await Store.list('day:', false);
+    if(listRes && listRes.keys){
+      totalCount = listRes.keys.length;
+      for(const k of listRes.keys){
+        try{
+          const res = await Store.delete(k, false);
+          if(!res || res.deleted !== true) failCount++;
+        }catch(e){ failCount++; console.error('刪除失敗', k, e); }
+      }
+    }
+  }catch(e){ failCount++; console.error('清除失敗', e); }
+
+  // verify: re-list to confirm the deletions actually took effect
+  let remaining = 0;
+  try{
+    const check = await Store.list('day:', false);
+    remaining = (check && check.keys) ? check.keys.length : 0;
+  }catch(e){ /* can't verify, leave as-is */ }
+
+  btn.disabled = false;
+  btn.textContent = '清除全部資料';
+  if(remaining > 0){
+    showToast(`清除未完全成功，還有 ${remaining} 天的資料留在雲端（同步儲存目前可能不穩定）。可以再按一次，或稍後再試。`, true);
+  } else if(failCount > 0 && totalCount === 0){
+    showToast('清除時發生錯誤，請稍後再試。', true);
+  }
+  await goToDate(todayStr());
+  document.querySelector('.tab[data-tab="log"]').click();
+}
+
+document.getElementById('loadSample').addEventListener('click', loadSampleData);
+document.getElementById('clearAll').addEventListener('click', ()=>{
+  if(confirm('確定要清除所有已記錄的資料嗎？此動作無法復原。')) clearAllData();
+});
+
+// ---------- sync status ----------
+function showToast(msg, isError){
+  let el = document.getElementById('toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{ el.className = 'toast'; }, 6000);
+}
+
+function renderSyncStatus(){
+  const statusHtml = ghConfigured()
+    ? (()=>{ const s=getGhSettings(); return `<div class="sync-info gh">☁️ 已連接 GitHub 同步（${escapeAttr(s.owner)}/${escapeAttr(s.repo)}），此裝置的紀錄會存到你的 GitHub Repo。</div>`; })()
+    : `<div class="sync-info local">💾 目前使用本機儲存，資料只存在這個瀏覽器裡，不會跨裝置同步。到「設定」分頁可以連接 GitHub 開啟跨裝置同步。</div>`;
+  const topEl = document.getElementById('syncStatus');
+  if(topEl) topEl.innerHTML = statusHtml;
+  const settingsEl = document.getElementById('settingsSyncStatus');
+  if(settingsEl) settingsEl.innerHTML = statusHtml;
+}
+
+function loadGhSettingsForm(){
+  const s = getGhSettings();
+  if(!s) return;
+  document.getElementById('ghOwner').value = s.owner || '';
+  document.getElementById('ghRepo').value = s.repo || '';
+  document.getElementById('ghBranch').value = s.branch || '';
+  document.getElementById('ghToken').value = s.token || '';
+}
+
+async function reloadAllViews(){
+  await goToDate(currentDate);
+  if(document.getElementById('tab-timeline').classList.contains('active')) renderTimeline();
+  if(document.getElementById('tab-insights').classList.contains('active')) renderInsights();
+}
+
+document.getElementById('ghSave').addEventListener('click', async ()=>{
+  const owner = document.getElementById('ghOwner').value.trim();
+  const repo = document.getElementById('ghRepo').value.trim();
+  const branch = document.getElementById('ghBranch').value.trim() || 'main';
+  const token = document.getElementById('ghToken').value.trim();
+  if(!owner || !repo || !token){
+    showToast('請填寫 GitHub 帳號、Repo 名稱和 Token。', true);
+    return;
+  }
+  saveGhSettings({owner, repo, branch, token});
+  renderSyncStatus();
+  showToast('已儲存，正在連接並讀取資料…');
+  try{
+    await reloadAllViews();
+    showToast('已連接 GitHub，資料同步中。');
+  }catch(e){
+    showToast('連接失敗：'+e.message+'，請檢查帳號／Repo／Token 是否正確。', true);
+  }
+});
+
+document.getElementById('ghTest').addEventListener('click', async ()=>{
+  const owner = document.getElementById('ghOwner').value.trim();
+  const repo = document.getElementById('ghRepo').value.trim();
+  const token = document.getElementById('ghToken').value.trim();
+  if(!owner || !repo || !token){
+    showToast('請先填寫帳號、Repo 名稱和 Token 再測試。', true);
+    return;
+  }
+  try{
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json' }
+    });
+    if(res.ok){ showToast('連線成功！Repo 存在且 Token 有效。'); }
+    else if(res.status===404){ showToast('找不到這個 Repo，請確認帳號與 Repo 名稱是否正確。', true); }
+    else if(res.status===401){ showToast('Token 無效或已過期，請重新產生一組。', true); }
+    else{ showToast('連線失敗（狀態碼 '+res.status+'）。', true); }
+  }catch(e){
+    showToast('連線失敗，請檢查網路連線。', true);
+  }
+});
+
+document.getElementById('ghDisconnect').addEventListener('click', async ()=>{
+  if(!confirm('確定要中斷 GitHub 同步嗎？之後會改用這個瀏覽器的本機儲存。')) return;
+  clearGhSettings();
+  document.getElementById('ghOwner').value = '';
+  document.getElementById('ghRepo').value = '';
+  document.getElementById('ghBranch').value = '';
+  document.getElementById('ghToken').value = '';
+  renderSyncStatus();
+  await reloadAllViews();
+  showToast('已中斷 GitHub 同步，改用本機儲存。');
+});
+
+// ---------- init ----------
+(async function init(){
+  renderStars(0);
+  renderSyncStatus();
+  loadGhSettingsForm();
+  await loadSettings();
+  renderMealPresets();
+  await goToDate(currentDate);
+})();
+</script>
+</body>
+</html>
