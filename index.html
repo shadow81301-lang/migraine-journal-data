@@ -168,6 +168,34 @@
 
   .empty-note{ font-size:13px; color:var(--ink-faint); font-style:italic; font-family:var(--serif); }
 
+  .protein-summary{ margin-bottom:14px; }
+  .protein-summary:empty{ display:none; }
+  .protein-summary-label{ font-size:13px; color:var(--ink-soft); margin-bottom:6px; }
+  .protein-summary-label strong{ color:var(--sleep); font-family:var(--serif); font-size:15px; }
+
+  .nutrition-block{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); }
+  .nutrition-item-row{
+    display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:13px;
+  }
+  .nutrition-item-row select{
+    flex:1.4; font-family:var(--sans); font-size:13px; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:6px 8px; min-width:0;
+  }
+  .nutrition-item-row input[type=number]{
+    flex:1; width:0; font-family:var(--sans); font-size:13px; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:6px 8px;
+  }
+  .item-protein-tag{ font-size:12px; color:var(--sleep); white-space:nowrap; min-width:64px; text-align:right; }
+  .item-remove{ font-size:16px; }
+  .nutrition-row{ display:flex; justify-content:space-between; align-items:center; }
+  .add-item-btn{
+    font-family:var(--sans); font-size:12px; color:var(--sleep);
+    background:none; border:1px dashed var(--sleep); border-radius:12px;
+    padding:5px 12px; cursor:pointer;
+  }
+  .add-item-btn:hover{ background:var(--sleep-soft); }
+  .protein-subtotal{ font-size:12px; color:var(--sleep); }
+
   /* Timeline */
   .day-summary{
     border-bottom:1px solid var(--line); padding:16px 0; cursor:pointer;
@@ -375,8 +403,10 @@
 
       <div class="block block-food">
         <h2><span class="section-title">飲食記錄</span><button id="addMeal">＋ 新增</button></h2>
+        <div id="proteinSummary" class="protein-summary"></div>
         <div class="chips" id="mealPresetsChips"></div>
         <div id="mealsList"></div>
+        <datalist id="foodDbList"></datalist>
         <p class="empty-note" id="mealsEmpty">今天還沒有記錄餐點。</p>
         <div class="add-tag-row">
           <input type="text" id="newFoodTag" placeholder="新增自訂食物標籤">
@@ -420,7 +450,13 @@
         <div id="foodBars"></div>
         <p class="empty-note" id="foodEmpty"></p>
       </div>
-      <p class="hint" style="margin-top:10px;">因子與食物統計已納入頭痛發生當天及前一天的紀錄，紀錄天數越多，統計會越準確。</p>
+      <div class="insight-block">
+        <h3>個別品項與頭痛的關聯</h3>
+        <p class="hint" style="margin-bottom:12px;">根據你在「飲食記錄」裡輸入的每一道品項名稱計算——同一道菜吃過越多次、卻越常出現在頭痛前後，排名就會越前面。</p>
+        <div id="dishBars"></div>
+        <p class="empty-note" id="dishEmpty"></p>
+      </div>
+      <p class="hint" style="margin-top:10px;">以上統計已納入頭痛發生當天及前一天的紀錄（24–48 小時窗口），紀錄天數越多、吃過的次數越多，統計會越準確——這只是機率上的關聯，不是醫學診斷，仍建議跟醫生討論可疑的食物。</p>
 
       <div class="insight-block">
         <h3>匯出報告</h3>
@@ -436,6 +472,12 @@
       <div class="insight-block">
         <h3>目前的儲存方式</h3>
         <div id="settingsSyncStatus"></div>
+      </div>
+
+      <div class="insight-block">
+        <h3>每日蛋白質目標</h3>
+        <p class="hint" style="margin-bottom:14px;">設定目標後，「飲食記錄」會顯示今天累積吃了多少蛋白質、還差多少。可以先抓「體重(kg) × 1.6~2.2」估算運動族群的目標值。</p>
+        <div class="row"><label>目標(g)</label><input type="number" id="proteinGoalInput" placeholder="例如 120"><button id="proteinGoalSave" class="btn-primary" style="border-radius:12px; border:1px solid var(--accent); background:var(--accent); color:#fff; padding:7px 16px; font-size:12px; cursor:pointer;">儲存</button></div>
       </div>
 
       <div class="insight-block">
@@ -476,7 +518,7 @@
       </div>
     </section>
   </main>
-  <p class="build-stamp">版本建置：2026-09-05 22:00（GitHub 同步版）</p>
+  <p class="build-stamp">版本建置：2026-09-06 09:00（多品項記錄版）</p>
 </div>
 <div id="printArea"></div>
 
@@ -488,6 +530,38 @@ const LOCATIONS = ['','單側','雙側','太陽穴','後腦','前額','眼周'];
 const MED_OVERUSE_WEEKLY = 2;   // 每週用藥天數門檻
 const MED_OVERUSE_MONTHLY = 10; // 每月用藥天數門檻
 let mealPresets = [];
+let proteinGoal = 0; // 0 = 未設定目標
+
+// 常見食物的蛋白質／熱量資料庫（每 100g），僅供個人估算參考，非精確營養標示
+const FOOD_DB = {
+  '雞胸肉': {protein:31, kcal:165, defaultG:100},
+  '雞腿肉': {protein:26, kcal:209, defaultG:100},
+  '雞蛋':   {protein:13, kcal:155, defaultG:50},
+  '牛奶':   {protein:3.4, kcal:61, defaultG:240},
+  '無糖豆漿': {protein:3.6, kcal:33, defaultG:240},
+  '希臘優格': {protein:10, kcal:59, defaultG:150},
+  '原味優格': {protein:3.5, kcal:61, defaultG:150},
+  '豆腐':   {protein:8, kcal:76, defaultG:100},
+  '鮭魚':   {protein:20, kcal:208, defaultG:100},
+  '鯖魚':   {protein:19, kcal:205, defaultG:100},
+  '鮪魚罐頭': {protein:26, kcal:132, defaultG:100},
+  '牛肉':   {protein:26, kcal:250, defaultG:100},
+  '豬里肌': {protein:22, kcal:143, defaultG:100},
+  '毛豆':   {protein:11, kcal:121, defaultG:100},
+  '黑豆':   {protein:8, kcal:132, defaultG:100},
+  '鷹嘴豆': {protein:9, kcal:164, defaultG:100},
+  '起司片': {protein:25, kcal:113, defaultG:20},
+  '茅屋起司': {protein:11, kcal:98, defaultG:100},
+  '乳清蛋白粉': {protein:80, kcal:400, defaultG:30},
+  '花生醬': {protein:25, kcal:588, defaultG:32},
+  '杏仁':   {protein:21, kcal:579, defaultG:28},
+  '燕麥':   {protein:13, kcal:389, defaultG:50},
+  '白飯':   {protein:2.7, kcal:130, defaultG:150},
+  '糙米飯': {protein:2.7, kcal:112, defaultG:150},
+  '吐司':   {protein:9, kcal:265, defaultG:60},
+  '香蕉':   {protein:1.1, kcal:89, defaultG:120}
+};
+const FOOD_DB_NAMES = Object.keys(FOOD_DB);
 
 let currentDate = todayStr();
 let currentDay = emptyDay();
@@ -507,6 +581,27 @@ function emptyDay(){
 }
 function uid(){ return 'id'+(uidCounter++)+'_'+Date.now(); }
 function dayKey(dateStr){ return 'day:'+dateStr; }
+
+// ---------- nutrition helpers ----------
+// item = {id, name, grams, manualProtein}
+// name is now freeform text (the dish itself, e.g. "滷蛋", "控肉", "炒高麗菜").
+// If the trimmed name exactly matches a FOOD_DB entry and grams is filled in,
+// protein is auto-estimated; otherwise it falls back to a manually typed value (optional).
+function matchedFoodDb(item){
+  if(!item.name) return null;
+  return FOOD_DB[item.name.trim()] || null;
+}
+function itemProtein(item){
+  const db = matchedFoodDb(item);
+  if(db && item.grams) return (db.protein * (Number(item.grams)||0)) / 100;
+  return Number(item.manualProtein) || 0;
+}
+function mealProtein(meal){
+  return (meal.items||[]).reduce((sum,it)=>sum+itemProtein(it), 0);
+}
+function dayProtein(day){
+  return (day.meals||[]).reduce((sum,m)=>sum+mealProtein(m), 0);
+}
 
 // ============ Storage layer ============
 // Two backends: localStorage (default, per-browser) and GitHub repo (optional, cross-device).
@@ -666,6 +761,15 @@ async function loadSettings(){
     const res = await Store.get('settings:mealPresets', false);
     if(res && res.value) mealPresets = JSON.parse(res.value);
   }catch(e){ mealPresets = []; }
+  try{
+    const res = await Store.get('settings:proteinGoal', false);
+    if(res && res.value) proteinGoal = Number(res.value) || 0;
+  }catch(e){ proteinGoal = 0; }
+}
+async function saveProteinGoal(value){
+  proteinGoal = Number(value) || 0;
+  try{ await Store.set('settings:proteinGoal', String(proteinGoal), false); }
+  catch(e){ console.error('儲存蛋白質目標失敗', e); }
 }
 async function saveCustomFoodTag(tag){
   try{
@@ -786,12 +890,14 @@ function renderMeals(){
   list.innerHTML = '';
   document.getElementById('mealsEmpty').style.display = currentDay.meals.length ? 'none' : 'block';
   currentDay.meals.forEach(meal => {
+    if(!meal.items) meal.items = [];
     const el = document.createElement('div');
     el.className = 'entry entry-food';
     el.dataset.id = meal.id;
     const chipsHtml = FOOD_TAGS.map(tag =>
       `<button type="button" class="chip food${meal.tags.includes(tag)?' active':''}" data-tag="${tag}">${tag}</button>`
     ).join('');
+    const mp = mealProtein(meal);
     el.innerHTML = `
       <div class="row">
         <input type="time" class="meal-time" value="${meal.time||''}">
@@ -800,6 +906,14 @@ function renderMeals(){
         <button class="remove" aria-label="刪除">×</button>
       </div>
       <div class="chips">${chipsHtml}</div>
+      <div class="nutrition-block">
+        <p class="hint" style="margin:0 0 8px;">這一餐的品項（可以新增好幾樣，例如主菜、配菜、湯各記一筆）</p>
+        <div class="nutrition-items"></div>
+        <div class="nutrition-row">
+          <button type="button" class="add-item-btn">＋ 新增一道品項</button>
+          <span class="protein-subtotal">${mp>0?`合計蛋白質約 ${mp.toFixed(1)}g`:''}</span>
+        </div>
+      </div>
     `;
     el.querySelector('.meal-time').addEventListener('change', e=>{ meal.time = e.target.value; saveCurrentDay(); });
     el.querySelector('.meal-text').addEventListener('input', e=>{ meal.text = e.target.value; });
@@ -821,11 +935,85 @@ function renderMeals(){
         saveCurrentDay();
       });
     });
+    el.querySelector('.add-item-btn').addEventListener('click', ()=>{
+      meal.items.push({id:uid(), name:'', grams:'', manualProtein:''});
+      saveCurrentDay(); renderMeals();
+      // focus the newly added row's name field (re-query since renderMeals rebuilds the DOM)
+      requestAnimationFrame(()=>{
+        const freshEl = document.querySelector('.entry-food[data-id="'+meal.id+'"]');
+        const rows = freshEl ? freshEl.querySelectorAll('.item-name') : [];
+        if(rows.length) rows[rows.length-1].focus();
+      });
+    });
+    renderMealItems(el.querySelector('.nutrition-items'), meal);
     list.appendChild(el);
   });
+  renderProteinSummary();
 }
+
+function renderMealItems(container, meal){
+  container.innerHTML = '';
+  meal.items.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'nutrition-item-row';
+    const matched = matchedFoodDb(item);
+    row.innerHTML = `
+      <input type="text" class="item-name" list="foodDbList" placeholder="品項名稱，例如：滷蛋" value="${escapeAttr(item.name||'')}">
+      <input type="number" class="item-grams" placeholder="公克(選填)" value="${item.grams||''}">
+      <input type="number" class="item-manual-protein" placeholder="蛋白質g(選填)" value="${item.manualProtein||''}" style="${matched && item.grams ? 'display:none;' : ''}">
+      <span class="item-protein-tag">${itemProtein(item)>0 ? itemProtein(item).toFixed(1)+'g 蛋白質' : ''}</span>
+      <button class="remove item-remove" aria-label="刪除">×</button>
+    `;
+    const nameInput = row.querySelector('.item-name');
+    const gramsInput = row.querySelector('.item-grams');
+    const manualInput = row.querySelector('.item-manual-protein');
+    const tagEl = row.querySelector('.item-protein-tag');
+
+    function updateTagLive(){
+      const p = itemProtein(item);
+      tagEl.textContent = p>0 ? p.toFixed(1)+'g 蛋白質' : '';
+      const m = matchedFoodDb(item);
+      manualInput.style.display = (m && item.grams) ? 'none' : '';
+    }
+
+    nameInput.addEventListener('input', e=>{ item.name = e.target.value; updateTagLive(); });
+    nameInput.addEventListener('change', ()=>{
+      const m = matchedFoodDb(item);
+      if(m && !item.grams) item.grams = m.defaultG;
+      saveCurrentDay(); renderMeals();
+    });
+    gramsInput.addEventListener('input', e=>{ item.grams = e.target.value; updateTagLive(); });
+    gramsInput.addEventListener('change', ()=>{ saveCurrentDay(); renderMeals(); });
+    manualInput.addEventListener('input', e=>{ item.manualProtein = e.target.value; updateTagLive(); });
+    manualInput.addEventListener('change', ()=>{ saveCurrentDay(); renderMeals(); });
+
+    row.querySelector('.item-remove').addEventListener('click', ()=>{
+      meal.items = meal.items.filter(i=>i.id!==item.id);
+      saveCurrentDay(); renderMeals();
+    });
+    container.appendChild(row);
+  });
+}
+
+function renderProteinSummary(){
+  const el = document.getElementById('proteinSummary');
+  if(!el) return;
+  const total = dayProtein(currentDay);
+  if(proteinGoal > 0){
+    const pct = Math.min(100, Math.round((total/proteinGoal)*100));
+    el.innerHTML = `
+      <div class="protein-summary-label">今日蛋白質　<strong>${total.toFixed(1)}g</strong> / 目標 ${proteinGoal}g</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:var(--sleep);"></div></div>
+    `;
+  } else if(total > 0){
+    el.innerHTML = `<div class="protein-summary-label">今日蛋白質　<strong>${total.toFixed(1)}g</strong>（尚未設定每日目標，可到「設定」分頁加入）</div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
 function addMeal(){
-  currentDay.meals.push({id:uid(), time:'', text:'', tags:[]});
+  currentDay.meals.push({id:uid(), time:'', text:'', tags:[], items:[]});
   saveCurrentDay(); renderMeals();
 }
 
@@ -995,6 +1183,8 @@ async function renderTimeline(){
     if(hdCount) flags.push(`頭痛 ${hdCount} 次`);
     if(day.meals && day.meals.length) flags.push(`飲食 ${day.meals.length} 筆`);
     if(day.sleep && day.sleep.quality) flags.push(`睡眠 ${day.sleep.quality}★`);
+    const dp = dayProtein(day);
+    if(dp > 0) flags.push(`蛋白質 ${dp.toFixed(0)}g`);
 
     let detailHtml = '';
     if(day.sleep && (day.sleep.bedtime || day.sleep.waketime)){
@@ -1012,7 +1202,10 @@ async function renderTimeline(){
       if(fParts.length) detailHtml += `<div class="day-detail-line">因子：${fParts.join('、')}</div>`;
     }
     if(day.meals && day.meals.length){
-      detailHtml += `<div class="day-detail-line">飲食：${day.meals.map(m=>`${m.time||''} ${m.text||''}${m.tags.length?'（'+m.tags.join('、')+'）':''}`).join('；')}</div>`;
+      detailHtml += `<div class="day-detail-line">飲食：${day.meals.map(m=>{
+        const itemsStr = (m.items&&m.items.length) ? '［' + m.items.map(it=>it.name).filter(Boolean).join('、') + '］' : '';
+        return `${m.time||''} ${m.text||''}${m.tags.length?'（'+m.tags.join('、')+'）':''}${itemsStr}`;
+      }).join('；')}</div>`;
     }
     if(day.headaches && day.headaches.length){
       detailHtml += day.headaches.map(h=>{
@@ -1108,6 +1301,76 @@ async function renderInsights(){
 
   renderBars('factorBars','factorEmpty', factorCounts, headacheDayDates.length);
   renderBars('foodBars','foodEmpty', foodCounts, headacheDayDates.length);
+  renderDishCorrelation(all, headacheDayDates);
+}
+
+// ---------- individual dish/item correlation (based on the freeform 品項 names) ----------
+function renderDishCorrelation(all, headacheDayDates){
+  const container = document.getElementById('dishBars');
+  const emptyEl = document.getElementById('dishEmpty');
+  if(!container) return;
+
+  // how many distinct days each dish name was eaten on, across all logged days
+  const eatenOn = {}; // name -> Set(dates)
+  Object.keys(all).forEach(date=>{
+    const day = all[date];
+    (day.meals||[]).forEach(meal=>{
+      (meal.items||[]).forEach(item=>{
+        const n = (item.name||'').trim();
+        if(!n) return;
+        if(!eatenOn[n]) eatenOn[n] = new Set();
+        eatenOn[n].add(date);
+      });
+    });
+  });
+
+  // how many of those "eaten" days fall inside a 24-48h window before a headache
+  const headacheWindowOn = {}; // name -> Set(headache dates)
+  headacheDayDates.forEach(({date, day})=>{
+    const prevDate = addDays(date, -1);
+    const prevDay = all[prevDate];
+    const namesToday = new Set();
+    [...(day.meals||[]), ...((prevDay&&prevDay.meals)||[])].forEach(meal=>{
+      (meal.items||[]).forEach(item=>{
+        const n = (item.name||'').trim();
+        if(n) namesToday.add(n);
+      });
+    });
+    namesToday.forEach(n=>{
+      if(!headacheWindowOn[n]) headacheWindowOn[n] = new Set();
+      headacheWindowOn[n].add(date);
+    });
+  });
+
+  // only consider dishes eaten on at least 2 different days (otherwise one coincidence skews the rate)
+  const rows = Object.keys(eatenOn)
+    .filter(n => eatenOn[n].size >= 2)
+    .map(n => {
+      const eaten = eatenOn[n].size;
+      const hit = headacheWindowOn[n] ? headacheWindowOn[n].size : 0;
+      return { name:n, eaten, hit, rate: hit/eaten };
+    })
+    .filter(r => r.hit > 0)
+    .sort((a,b)=> b.rate - a.rate || b.hit - a.hit)
+    .slice(0, 8);
+
+  container.innerHTML = '';
+  if(!rows.length){
+    emptyEl.textContent = '目前品項紀錄還不夠多（同一道菜至少要吃過 2 次才會納入分析），多記錄幾天後再回來看看。';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  rows.forEach(r=>{
+    const pct = Math.round(r.rate*100);
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-label"><span>${escapeAttr(r.name)}</span><span>吃過 ${r.eaten} 次中，${r.hit} 次在頭痛前後</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    `;
+    container.appendChild(row);
+  });
 }
 
 // ---------- medication overuse alert ----------
@@ -1202,8 +1465,11 @@ function buildReportLines(all){
     if(f.period) fParts.push('月經期間');
     if(fParts.length) lines.push('因子：'+fParts.join('、'));
     (day.meals||[]).forEach(m=>{
-      lines.push(`飲食 ${m.time||''}：${m.text||''}${m.tags&&m.tags.length?'（'+m.tags.join('、')+'）':''}`);
+      const itemsStr = (m.items&&m.items.length) ? '　品項：'+m.items.map(it=>it.name+(it.grams?`(${it.grams}g)`:'')).join('、') : '';
+      lines.push(`飲食 ${m.time||''}：${m.text||''}${m.tags&&m.tags.length?'（'+m.tags.join('、')+'）':''}${itemsStr}`);
     });
+    const dp = dayProtein(day);
+    if(dp > 0) lines.push(`當日蛋白質合計：約 ${dp.toFixed(1)}g`);
     (day.headaches||[]).forEach(h=>{
       lines.push(`頭痛 ${h.start||'—'}–${h.end||'—'}　強度${h.intensity}　${h.location||''}${h.prodrome&&h.prodrome.length?'　前驅：'+h.prodrome.join('、'):''}${h.symptoms&&h.symptoms.length?'　症狀：'+h.symptoms.join('、'):''}${h.medication?'　用藥：'+h.medication:''}`);
     });
@@ -1247,8 +1513,11 @@ async function exportPrintReport(){
     if(f.period) fParts.push('月經期間');
     if(fParts.length) html += `<div class="p-line">因子：${fParts.join('、')}</div>`;
     (day.meals||[]).forEach(m=>{
-      html += `<div class="p-line">飲食 ${m.time||''}：${m.text||''}${m.tags&&m.tags.length?'（'+m.tags.join('、')+'）':''}</div>`;
+      const itemsStr = (m.items&&m.items.length) ? '　品項：'+m.items.map(it=>it.name+(it.grams?`(${it.grams}g)`:'')).join('、') : '';
+      html += `<div class="p-line">飲食 ${m.time||''}：${m.text||''}${m.tags&&m.tags.length?'（'+m.tags.join('、')+'）':''}${itemsStr}</div>`;
     });
+    const dpp = dayProtein(day);
+    if(dpp > 0) html += `<div class="p-line">當日蛋白質合計：約 ${dpp.toFixed(1)}g</div>`;
     (day.headaches||[]).forEach(h=>{
       html += `<div class="p-line">頭痛 ${h.start||'—'}–${h.end||'—'}　強度${h.intensity}　${h.location||''}${h.prodrome&&h.prodrome.length?'　前驅：'+h.prodrome.join('、'):''}${h.symptoms&&h.symptoms.length?'　症狀：'+h.symptoms.join('、'):''}${h.medication?'　用藥：'+h.medication:''}</div>`;
     });
@@ -1300,9 +1569,9 @@ function buildSampleData(){
     sleep:{bedtime:'23:30', waketime:'07:00', quality:4},
     factors:{stress:2, water:1800, caffeine:80, screenTime:4, weatherChange:false, period:false},
     meals:[
-      {id:uid(), time:'08:00', text:'燕麥粥、香蕉', tags:[]},
-      {id:uid(), time:'12:30', text:'雞胸肉沙拉', tags:[]},
-      {id:uid(), time:'19:00', text:'烤鮭魚、糙米飯', tags:[]}
+      {id:uid(), time:'08:00', text:'燕麥粥、香蕉', tags:[], items:[{id:uid(), name:'燕麥', grams:50}, {id:uid(), name:'香蕉', grams:120}]},
+      {id:uid(), time:'12:30', text:'雞胸肉沙拉', tags:[], items:[{id:uid(), name:'雞胸肉', grams:150}]},
+      {id:uid(), time:'19:00', text:'烤鮭魚、糙米飯', tags:[], items:[{id:uid(), name:'鮭魚', grams:120}, {id:uid(), name:'糙米飯', grams:150}]}
     ],
     headaches:[]
   };
@@ -1323,7 +1592,12 @@ function buildSampleData(){
     factors:{stress:1, water:2000, caffeine:50, screenTime:3, weatherChange:false, period:false},
     meals:[
       {id:uid(), time:'08:00', text:'全麥吐司、蛋', tags:[]},
-      {id:uid(), time:'12:00', text:'蔬菜湯麵', tags:[]}
+      {id:uid(), time:'12:30', text:'雞腿便當', tags:[], items:[
+        {id:uid(), name:'雞腿排', grams:150},
+        {id:uid(), name:'滷蛋', grams:50},
+        {id:uid(), name:'炒高麗菜', grams:0, manualProtein:1},
+        {id:uid(), name:'白飯', grams:150}
+      ]}
     ],
     headaches:[]
   };
@@ -1500,6 +1774,13 @@ function loadGhSettingsForm(){
   document.getElementById('ghToken').value = s.token || '';
 }
 
+document.getElementById('proteinGoalSave').addEventListener('click', async ()=>{
+  const val = document.getElementById('proteinGoalInput').value;
+  await saveProteinGoal(val);
+  renderProteinSummary();
+  showToast('已儲存每日蛋白質目標。');
+});
+
 async function reloadAllViews(){
   await goToDate(currentDate);
   if(document.getElementById('tab-timeline').classList.contains('active')) renderTimeline();
@@ -1562,9 +1843,11 @@ document.getElementById('ghDisconnect').addEventListener('click', async ()=>{
 // ---------- init ----------
 (async function init(){
   renderStars(0);
+  document.getElementById('foodDbList').innerHTML = FOOD_DB_NAMES.map(n=>`<option value="${n}">`).join('');
   renderSyncStatus();
   loadGhSettingsForm();
   await loadSettings();
+  document.getElementById('proteinGoalInput').value = proteinGoal || '';
   renderMealPresets();
   await goToDate(currentDate);
 })();
